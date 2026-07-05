@@ -99,7 +99,7 @@ public class BadgeUnitTests : BadgeTestBase
     [InlineData("99+")]
     [InlineData("")]
     [InlineData(null)]
-    public void Badge_Should_Handle_String_Content(string content)
+    public void Badge_Should_Handle_String_Content(string? content)
     {
         // Arrange
         var badge = CreateBadge();

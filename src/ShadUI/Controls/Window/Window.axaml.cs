@@ -458,7 +458,10 @@ public class Window : Avalonia.Controls.Window
             : WindowState.Maximized;
     }
 
-    internal bool HasOpenDialog { get; set; }
+    /// <summary>
+    /// Gets a value indicating whether the window has any open dialogs.
+    /// </summary>
+    public bool HasOpenDialog { get; internal set; }
 
     private bool _snapLayoutEnabled = true;
 

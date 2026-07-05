@@ -296,16 +296,4 @@ public class DateInput : TemplatedControl
         UpdateDateValue();
     }
 
-    /// <summary>
-    ///     Updates the data validation state of the control.
-    /// </summary>
-    /// <param name="property">The property that is being validated.</param>
-    /// <param name="state">The current binding state.</param>
-    /// <param name="error">The validation error, if any.</param>
-    protected override void UpdateDataValidation(AvaloniaProperty property, BindingValueType state, Exception? error)
-    {
-        base.UpdateDataValidation(property, state, error);
-
-        if (property == ValueProperty) DataValidationErrors.SetError(this, error);
-    }
 }
