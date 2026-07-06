@@ -226,6 +226,22 @@ internal class SimpleDialog : TemplatedControl, IDisposable
     {
         try
         {
+            await InvokeCancelCallbacksAsync().ConfigureAwait(true);
+        }
+        finally
+        {
+            _manager?.CloseDialog(this);
+            _manager?.OpenLast();
+        }
+    }
+
+    /// <summary>
+    ///     Invokes cancel callbacks when the dialog is dismissed without pressing an action button.
+    /// </summary>
+    internal async Task InvokeCancelCallbacksAsync()
+    {
+        try
+        {
             CancelCallback?.Invoke();
             if (CancelCallbackAsync is not null)
                 await CancelCallbackAsync().ConfigureAwait(true);
@@ -233,11 +249,6 @@ internal class SimpleDialog : TemplatedControl, IDisposable
         catch (Exception ex)
         {
             Console.WriteLine(ex);
-        }
-        finally
-        {
-            _manager?.CloseDialog(this);
-            _manager?.OpenLast();
         }
     }
 

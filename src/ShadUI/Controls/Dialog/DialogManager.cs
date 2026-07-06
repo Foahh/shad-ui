@@ -80,6 +80,11 @@ public sealed class DialogManager
         if (Dialogs.Count == 0) return;
 
         var lastDialog = Dialogs.Last();
+        if (lastDialog.Key is SimpleDialog simpleDialog)
+        {
+            _ = simpleDialog.InvokeCancelCallbacksAsync();
+        }
+
         CloseDialog(lastDialog.Key);
 
         var context = lastDialog.Key.DataContext;
