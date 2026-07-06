@@ -2,7 +2,6 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:converters="clr-namespace:Avalonia.Controls.Converters;assembly=Avalonia.Controls"
     xmlns:shadui="clr-namespace:ShadUI"
-    xmlns:system="clr-namespace:System;assembly=netstandard"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <converters:PlatformKeyGestureConverter x:Key="KeyGestureConverter" />
     <ControlTheme TargetType="MenuItem" x:Key="{x:Type MenuItem}">
@@ -71,19 +70,13 @@
                                     VerticalAlignment="Center" />
                                 <ContentPresenter
                                     Content="{TemplateBinding Header}"
+                                    FontSize="14"
+                                    FontWeight="Medium"
                                     Grid.Column="1"
                                     HorizontalAlignment="Left"
                                     Name="HeaderPresenter"
-                                    VerticalAlignment="Center">
-                                    <ContentPresenter.DataTemplates>
-                                        <DataTemplate DataType="system:String">
-                                            <TextBlock
-                                                FontSize="14"
-                                                FontWeight="Medium"
-                                                Text="{CompiledBinding}" />
-                                        </DataTemplate>
-                                    </ContentPresenter.DataTemplates>
-                                </ContentPresenter>
+                                    RecognizesAccessKey="True"
+                                    VerticalAlignment="Center" />
                                 <PathIcon
                                     Data="{x:Static shadui:Icons.ChevronRight}"
                                     DockPanel.Dock="Right"
