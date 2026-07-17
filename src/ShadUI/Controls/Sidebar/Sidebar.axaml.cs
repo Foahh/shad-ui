@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
@@ -12,6 +14,12 @@ namespace ShadUI;
 /// </summary>
 public class Sidebar : ContentControl
 {
+    private CancellationTokenSource? _animationCancellation;
+    private double? _expandedWidth;
+    private bool _isAttached;
+    private bool _settingWidth;
+    private bool _templateApplied;
+
     /// <summary>
     ///     Defines the <see cref="Expanded" /> property.
     /// </summary>
@@ -199,13 +207,32 @@ public class Sidebar : ContentControl
         base.OnApplyTemplate(e);
         DefaultItemsSharedSizeGroup = $"Shared{Guid.NewGuid():N}";
         DefaultItemsGroup = $"Group{Guid.NewGuid():N}";
-        _cacheWidth = Width;
+        _templateApplied = true;
+
+        if (!_expandedWidth.HasValue) RememberExpandedWidth(Width);
+        ApplyWidthImmediately(Expanded);
     }
 
     /// <summary>
-    ///     Stores the width of the sidebar before collapsing for animation purposes.
+    ///     Called when the control is attached to the visual tree.
     /// </summary>
-    private double _cacheWidth;
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        _isAttached = true;
+
+        if (_templateApplied) ApplyWidthImmediately(Expanded);
+    }
+
+    /// <summary>
+    ///     Called when the control is detached from the visual tree.
+    /// </summary>
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        CancelCurrentAnimation();
+        _isAttached = false;
+        base.OnDetachedFromVisualTree(e);
+    }
 
     /// <summary>
     ///     Called when a property value changes.
@@ -215,11 +242,20 @@ public class Sidebar : ContentControl
     {
         base.OnPropertyChanged(change);
 
+        if (change.Property == WidthProperty && !_settingWidth && _animationCancellation is null)
+        {
+            var width = change.GetNewValue<double>();
+            RememberExpandedWidth(width);
+
+            if (_templateApplied && !Expanded && IsExpandedWidth(width))
+            {
+                SetSidebarWidth(MinWidth);
+            }
+        }
+
         if (change.Property == ExpandedProperty)
         {
-            var toExpand = change.GetNewValue<bool>();
-
-            AnimateOnExpand(toExpand);
+            AnimateOnExpand(change.GetNewValue<bool>());
         }
     }
 
@@ -229,45 +265,126 @@ public class Sidebar : ContentControl
     /// <param name="toExpand">A value indicating whether to expand or collapse the sidebar.</param>
     private void AnimateOnExpand(bool toExpand)
     {
-        if (!toExpand) _cacheWidth = Width;
+        var currentWidth = GetRenderedWidth();
+        var hadActiveAnimation = _animationCancellation is not null;
+        CancelCurrentAnimation();
 
-        if (toExpand)
+        if (!toExpand && !hadActiveAnimation) RememberExpandedWidth(Width);
+
+        var animationCancellation = new CancellationTokenSource();
+        _animationCancellation = animationCancellation;
+
+        var targetWidth = toExpand ? GetExpandedWidth() : MinWidth;
+        var duration = TimeSpan.FromMilliseconds(
+            toExpand ? ExpandAnimationDuration : CollapseAnimationDuration);
+
+        if (!_templateApplied || !_isAttached || duration <= TimeSpan.Zero ||
+            !double.IsFinite(currentWidth) || !double.IsFinite(targetWidth) ||
+            Math.Abs(currentWidth - targetWidth) < 0.5)
         {
-            this.Animate(WidthProperty)
-                .From(MinWidth)
-                .To(_cacheWidth)
-                .WithEasing(ExpandEasing)
-                .WithDuration(TimeSpan.FromMilliseconds(ExpandAnimationDuration))
-                .Start();
+            ApplyWidthImmediately(toExpand);
+            CompleteAnimation(animationCancellation);
+            return;
+        }
+
+        var easing = toExpand ? ExpandEasing : CollapseEasing;
+        _ = FluentAnimatorExtensions.ObserveAnimationAsync(
+            RunAnimationAsync(toExpand, currentWidth, targetWidth, duration, easing, animationCancellation));
+    }
+
+    private async Task RunAnimationAsync(bool toExpand, double currentWidth, double targetWidth, TimeSpan duration,
+        Easing easing, CancellationTokenSource animationCancellation)
+    {
+        try
+        {
+            var cancellation = animationCancellation.Token;
+            var widthAnimation = this.Animate(WidthProperty)
+                .From(currentWidth)
+                .To(targetWidth)
+                .WithEasing(easing)
+                .WithDuration(duration)
+                .WithCancellationToken(cancellation)
+                .RunAsync();
+
+            // Keep the target as the base value so removing the animation does not
+            // reveal the previous collapsed/expanded width for a frame.
+            SetSidebarWidth(targetWidth);
 
             if (MinWidth == 0)
             {
-                this.Animate(OpacityProperty)
-                    .From(0.0)
-                    .To(1.0)
-                    .WithEasing(new EaseInOut())
-                    .WithDuration(TimeSpan.FromMilliseconds(ExpandAnimationDuration))
-                    .Start();
-            }
-        }
-        else
-        {
-            this.Animate(WidthProperty)
-                .From(_cacheWidth)
-                .To(MinWidth)
-                .WithEasing(CollapseEasing)
-                .WithDuration(TimeSpan.FromMilliseconds(CollapseAnimationDuration))
-                .Start();
+                var targetOpacity = toExpand ? 1.0 : 0.0;
+                var opacityAnimation = this.Animate(OpacityProperty)
+                    .From(Opacity)
+                    .To(targetOpacity)
+                    .WithEasing(easing)
+                    .WithDuration(duration)
+                    .WithCancellationToken(cancellation)
+                    .RunAsync();
 
-            if (MinWidth == 0)
-            {
-                this.Animate(OpacityProperty)
-                    .From(1.0)
-                    .To(0.0)
-                    .WithEasing(new EaseOut())
-                    .WithDuration(TimeSpan.FromMilliseconds(CollapseAnimationDuration))
-                    .Start();
+                Opacity = targetOpacity;
+                await Task.WhenAll(widthAnimation, opacityAnimation);
             }
+            else
+            {
+                await widthAnimation;
+            }
+
+            cancellation.ThrowIfCancellationRequested();
         }
+        finally
+        {
+            CompleteAnimation(animationCancellation);
+        }
+    }
+
+    private void ApplyWidthImmediately(bool expanded)
+    {
+        SetSidebarWidth(expanded ? GetExpandedWidth() : MinWidth);
+        Opacity = expanded || MinWidth > 0 ? 1 : 0;
+    }
+
+    private double GetExpandedWidth() => _expandedWidth ?? Width;
+
+    private double GetRenderedWidth()
+    {
+        if (Bounds.Width > 0) return Bounds.Width;
+        if (double.IsFinite(Width)) return Width;
+        return DesiredSize.Width > 0 ? DesiredSize.Width : MinWidth;
+    }
+
+    private bool IsExpandedWidth(double width) => double.IsNaN(width) || width > MinWidth;
+
+    private void RememberExpandedWidth(double width)
+    {
+        if (IsExpandedWidth(width)) _expandedWidth = width;
+    }
+
+    private void SetSidebarWidth(double width)
+    {
+        _settingWidth = true;
+        try
+        {
+            Width = width;
+        }
+        finally
+        {
+            _settingWidth = false;
+        }
+    }
+
+    private void CancelCurrentAnimation()
+    {
+        var animation = _animationCancellation;
+        _animationCancellation = null;
+        animation?.Cancel();
+        animation?.Dispose();
+    }
+
+    private void CompleteAnimation(CancellationTokenSource animation)
+    {
+        if (!ReferenceEquals(_animationCancellation, animation)) return;
+
+        _animationCancellation = null;
+        animation.Dispose();
     }
 }
