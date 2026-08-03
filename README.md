@@ -1,8 +1,8 @@
 # ShadUI ✨
 
-ShadUI (shad·UI /ˈʃæd juː aɪ/) is an **Avalonia-based Desktop UI Library** inspired by [shadcn/ui](https://ui.shadcn.com/)
+ShadUI (shad·UI /ˈʃæd juː aɪ/) is an **Avalonia-based cross-platform UI library** inspired by [shadcn/ui](https://ui.shadcn.com/)
 and [Suki UI Library](https://kikipoulet.github.io/SukiUI/).  
-Our goal is to deliver a modern, beautiful, and intuitive UI library for [Avalonia](https://avaloniaui.net/).
+Our goal is to deliver a modern, beautiful, and intuitive UI library for [Avalonia](https://avaloniaui.net/) applications across supported platforms.
 
 [![NuGet](https://img.shields.io/nuget/v/ShadUI.svg)](https://www.nuget.org/packages/ShadUI)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ShadUI)](https://www.nuget.org/packages/ShadUI)
@@ -15,6 +15,20 @@ Our goal is to deliver a modern, beautiful, and intuitive UI library for [Avalon
 ---
 
 ## Installation 🚀
+
+### WebAssembly demo
+
+Try the full ShadUI component catalog in the [browser demo](https://accntech.github.io/shad-ui/), or run it locally:
+
+```bash
+dotnet workload install wasm-tools
+dotnet run --project src/ShadUI.Demo.Browser/ShadUI.Demo.Browser.csproj
+```
+
+Open the local URL printed by the development server. Publish it as a static site with
+`dotnet publish -c Release --project src/ShadUI.Demo.Browser/ShadUI.Demo.Browser.csproj`.
+
+### Library setup
 
 To get started with ShadUI:
 
@@ -46,7 +60,7 @@ Include ShadTheme in your App.xaml:
 </Application>
 ```
 
-> Recommended: Use the `ShadUI.Controls.Window` instead of `Avalonia.Controls.Window` to get the full ShadUI experience.
+> Recommended for desktop targets: Use `ShadUI.Controls.Window` instead of `Avalonia.Controls.Window` to get the full ShadUI experience.
 
 <img src="https://learn.microsoft.com/en-us/windows/apps/images/new-badge-dark.png" alt="App Screenshot" width="200"/>
 
