@@ -12,8 +12,8 @@
     <AvaloniaXaml Remove="Catalog\**\*.axaml" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Avalonia.Browser" Version="12.1.2" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Browser" Version="12.1.4" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.4" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
   </ItemGroup>
   <ItemGroup>
