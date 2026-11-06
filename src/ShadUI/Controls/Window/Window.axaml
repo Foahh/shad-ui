@@ -76,7 +76,7 @@
                     ClipToBounds="True"
                     CornerRadius="{TemplateBinding RootCornerRadius}"
                     Name="PART_WindowRoot">
-                    <VisualLayerManager IsHitTestVisible="True">
+                    <VisualLayerManager Name="PART_VisualLayerManager" IsHitTestVisible="True">
                         <Panel>
                             <Panel Name="PART_Root">
                             <DockPanel LastChildFill="True">
