@@ -1,4 +1,4 @@
-﻿name: Publish NuGet Package
+name: Publish NuGet Package
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0 # Required for MinVer
 
@@ -21,9 +21,9 @@ jobs:
           sudo apt-get install -y libssl-dev
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v6.1.0
         with:
-          dotnet-version: '9.0.x' # Updated to a more recent .NET version
+          dotnet-version: '10.0.x'
 
       - name: Install MinVer
         run: dotnet tool install --global minver-cli
